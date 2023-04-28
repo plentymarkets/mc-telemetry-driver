@@ -14,10 +14,6 @@ type Config interface {
 	GetBool(string) bool
 }
 
-//The path should be plentymarkets-private-{{cloudId}}/{{plentyHash}}/multichannel/kaufland/export.
-
-//The filename should be "CatalogExport-{{unixTimestamp)-{{accountId}}-{{catalogId}}-{{partNumber}}.json".
-
 // GetConfig returns the configuration
 func GetConfig() (Config, error) {
 
