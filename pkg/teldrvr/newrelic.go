@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"log"
+	"strings"
 
 	"github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/plentymarkets/mc-telemetry/pkg/telemetry"
@@ -18,13 +19,13 @@ func init() {
 		log.Fatal(err)
 	}
 
-	if cfg.GetString("telemetry.driver") != newrelicDriver {
+	if !strings.Contains(cfg.GetString("telemetry.driver"), newrelicDriver) {
 		return
 	}
 
 	nra, err := newrelic.NewApplication(
 		newrelic.ConfigAppName(cfg.GetString("telemetry.app")),
-		newrelic.ConfigLicense(cfg.GetString("newrelic.licence_key")),
+		newrelic.ConfigLicense(cfg.GetString("telemetry.newrelic.licenceKey")),
 		newrelic.ConfigAppLogForwardingEnabled(true),
 	)
 	if err != nil {
