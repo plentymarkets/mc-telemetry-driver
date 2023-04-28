@@ -4,6 +4,7 @@ import (
 	"io"
 	"log"
 
+	"github.com/google/uuid"
 	"github.com/plentymarkets/mc-telemetry/pkg/telemetry"
 )
 
@@ -35,6 +36,7 @@ type LocalTransaction struct {
 	transaction string
 	segments    []string
 	attributes  map[string]any
+	trace       string
 }
 
 // AddAttribute adds an attribute to the transaction
@@ -82,7 +84,8 @@ func (lt *LocalTransaction) Error(readCloser io.ReadCloser) {
 
 	errLog := string(errMsg)
 
-	log.Printf("- ERROR START -\nTransaction: %s\nSegment: %s\nMessage: %s\nAttributes: %+v\n- ERROR END -\n",
+	log.Printf("- ERROR START -\nTrace: %s\nTransaction: %s\nSegment: %s\nMessage: %s\nAttributes: %+v\n- ERROR END -\n",
+		lt.trace,
 		lt.transaction,
 		lt.segments[len(lt.segments)-1],
 		errLog,
@@ -100,7 +103,8 @@ func (lt *LocalTransaction) Info(readCloser io.ReadCloser) {
 
 	infoLog := string(infoMsg)
 
-	log.Printf("- INFO START -\nTransaction: %s\nSegment: %s\nMessage: %s\nAttributes: %+v\n- INFO END -\n",
+	log.Printf("- INFO START -\nTrace: %s\nTransaction: %s\nSegment: %s\nMessage: %s\nAttributes: %+v\n- INFO END -\n",
+		lt.trace,
 		lt.transaction,
 		lt.segments[len(lt.segments)-1],
 		infoLog,
@@ -110,4 +114,21 @@ func (lt *LocalTransaction) Info(readCloser io.ReadCloser) {
 // Done ends the transaction
 func (lt *LocalTransaction) Done() {
 	log.Printf("Transaction end: %s \n", lt.transaction)
+}
+
+// CreateTrace creates a trace for the transaction
+func (lt *LocalTransaction) CreateTrace() string {
+	uuid, _ := uuid.NewUUID()
+
+	return uuid.String()
+}
+
+// SetTrace sets a trace for the transaction
+func (lt *LocalTransaction) SetTrace(trace string) {
+	lt.trace = trace
+}
+
+// Trace returns the current ttrace for the transaction
+func (lt *LocalTransaction) Trace() string {
+	return lt.trace
 }

@@ -4,13 +4,14 @@ go 1.20
 
 require (
 	github.com/newrelic/go-agent/v3 v3.21.1
-	github.com/plentymarkets/mc-telemetry v0.0.1
+	github.com/plentymarkets/mc-telemetry v0.0.4
 	github.com/spf13/viper v1.15.0
 )
 
 require (
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/google/uuid v1.3.0
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect

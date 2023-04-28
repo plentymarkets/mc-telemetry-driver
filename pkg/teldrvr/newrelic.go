@@ -4,6 +4,8 @@ import (
 	"errors"
 	"io"
 	"log"
+	"net/http"
+	"strings"
 
 	"github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/plentymarkets/mc-telemetry/pkg/telemetry"
@@ -18,24 +20,24 @@ func init() {
 		log.Fatal(err)
 	}
 
-	if cfg.GetString("telemetry.driver") != newrelicDriver {
+	if !strings.Contains(cfg.GetString("telemetry.driver"), newrelicDriver) {
 		return
 	}
 
 	nra, err := newrelic.NewApplication(
 		newrelic.ConfigAppName(cfg.GetString("telemetry.app")),
-		newrelic.ConfigLicense(cfg.GetString("newrelic.licence_key")),
+		newrelic.ConfigLicense(cfg.GetString("telemetry.newrelic.licenceKey")),
 		newrelic.ConfigAppLogForwardingEnabled(true),
 	)
 	if err != nil {
 		log.Fatalf("newrelic app could not be created, error: %s", err.Error())
 	}
 
-	nrlc := NewRelicDriver{
+	nrd := NewRelicDriver{
 		NewRelicApp: nra,
 	}
 
-	telemetry.RegisterDriver(newrelicDriver, nrlc)
+	telemetry.RegisterDriver(newrelicDriver, nrd)
 }
 
 // NewRelicDriver holds all information the driver needs for telemetry
@@ -57,6 +59,7 @@ type NewRelicTransaction struct {
 	transaction newrelic.Transaction
 	segments    []newrelic.Segment
 	attributes  map[string]any
+	trace       string
 }
 
 // AddAttribute adds an attribute to the transaction
@@ -116,4 +119,24 @@ func (nrt *NewRelicTransaction) Info(readCloser io.ReadCloser) {
 // Done ends a transaction in new relic
 func (nrt *NewRelicTransaction) Done() {
 	nrt.transaction.End()
+}
+
+// CreateTrace creates a trace for the transaction
+func (nrt *NewRelicTransaction) CreateTrace() string {
+	header := http.Header{}
+	nrt.transaction.InsertDistributedTraceHeaders(header)
+	nrt.trace = header.Get(newrelic.DistributedTraceNewRelicHeader)
+	return nrt.trace
+}
+
+// SetTrace sets a trace for the transaction
+func (nrt *NewRelicTransaction) SetTrace(trace string) {
+	header := http.Header{}
+	header.Set(newrelic.DistributedTraceNewRelicHeader, trace)
+	nrt.transaction.AcceptDistributedTraceHeaders(newrelic.TransportQueue, header)
+}
+
+// Trace returns the current ttrace for the transaction
+func (nrt *NewRelicTransaction) Trace() string {
+	return nrt.trace
 }
