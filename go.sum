@@ -151,6 +151,8 @@ github.com/plentymarkets/mc-telemetry v0.0.1 h1:i0/8Rtq4GGGwWTzOZPOCk4wqlALz+HV7
 github.com/plentymarkets/mc-telemetry v0.0.1/go.mod h1:k4nwcziR3wmd1oZTn94fJdLJc74/g9C+h5GgJ+Pzppw=
 github.com/plentymarkets/mc-telemetry v0.0.3 h1:ACba0hpTgHgOxcFqzHqEODcyjHVRuOJkEjgBiA5MOrg=
 github.com/plentymarkets/mc-telemetry v0.0.3/go.mod h1:k4nwcziR3wmd1oZTn94fJdLJc74/g9C+h5GgJ+Pzppw=
+github.com/plentymarkets/mc-telemetry v0.0.4 h1:kMcZq3rsiP8kJF1K0qpc3Rc8bZnLmY2coEVmEDcCHTA=
+github.com/plentymarkets/mc-telemetry v0.0.4/go.mod h1:k4nwcziR3wmd1oZTn94fJdLJc74/g9C+h5GgJ+Pzppw=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4/go.mod h1:xMI15A0UPsDsEKsMN9yxemIoYk6Tm2C1GtYGdfGttqA=
