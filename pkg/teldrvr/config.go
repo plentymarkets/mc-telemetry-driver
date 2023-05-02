@@ -21,8 +21,12 @@ func GetConfig() (Config, error) {
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
 
+	// settigs
 	viper.BindEnv("telemetry.driver", "TELEMETRY_DRIVER")
 	viper.BindEnv("telemetry.app", "TELEMETRY_APP")
+
+	// specifics
+	viper.BindEnv("telemetry.newrelic.licenceKey", "TELEMETRY_NEWRELIC_LICENCE_KEY")
 
 	viper.AutomaticEnv()
 
