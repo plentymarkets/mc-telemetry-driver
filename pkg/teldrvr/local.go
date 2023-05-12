@@ -62,6 +62,34 @@ func (lt *LocalTransaction) AddTransactionAttribute(key string, value any) error
 	}
 
 	lt.attributes[key] = value
+
+	return nil
+}
+
+// AddSegmentAttribute adds an attribute to the currently open segment
+// - Thread safe -
+func (lt *LocalTransaction) AddSegmentAttribute(key string, value any) error {
+	lt.segmentContainer.mutex.Lock()
+	defer lt.segmentContainer.mutex.Unlock()
+
+	if len(lt.segmentContainer.segments) == 0 {
+		return fmt.Errorf("can not add attribute to not existing segment. Key: %s Value: %s\n", key, value)
+	}
+
+	if lt.segmentContainer.attributes == nil {
+		lt.segmentContainer.attributes = make(map[string]map[string]any)
+	}
+
+	currentOpenSegment := lt.segmentContainer.segments[len(lt.segmentContainer.segments)-1]
+
+	val, ok := lt.segmentContainer.attributes[currentOpenSegment][key]
+	if ok {
+		return fmt.Errorf("Segment attribute '%s' already set with value '%v'", key, val)
+	}
+
+	lt.segmentContainer.attributes[currentOpenSegment][key] = value
+
+	return nil
 }
 
 // SegmentStart starts a local segment and keeps track of all opened segments
