@@ -1,8 +1,11 @@
 package teldrvr
 
 import (
+	"errors"
+	"fmt"
 	"io"
 	"log"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/plentymarkets/mc-telemetry/pkg/telemetry"
@@ -21,64 +24,83 @@ func init() {
 type LocalDriver struct{}
 
 // Start starts a transaction
-func (ld LocalDriver) Start(name string) telemetry.Transaction {
+func (ld LocalDriver) Start(name string) (telemetry.Transaction, error) {
 	log.Printf("Transaction start: %s \n", name)
 
 	lt := LocalTransaction{
 		transaction: name,
 	}
 
-	return &lt
+	return &lt, nil
 }
 
 // LocalTransaction used for local transactions
 type LocalTransaction struct {
-	transaction string
-	segments    []string
-	attributes  map[string]any
-	trace       string
+	transaction      string
+	segmentContainer SegmentContainer
+	attributes       map[string]any
+	trace            string
+}
+
+// SegmentContainer used for segment handling
+type SegmentContainer struct {
+	segments   []string
+	attributes map[string]map[string]any
+	mutex      sync.RWMutex
 }
 
 // AddAttribute adds an attribute to the transaction
-func (lt *LocalTransaction) AddAttribute(key string, value any) {
+// - Not thread safe -
+func (lt *LocalTransaction) AddTransactionAttribute(key string, value any) error {
+	if lt.attributes == nil {
+		lt.attributes = make(map[string]any)
+	}
+
 	val, ok := lt.attributes[key]
 	if ok {
-		log.Printf("Attribute '%s' already set with value '%v'", key, val)
-		return
+		return fmt.Errorf("Transaction attribute '%s' already set with value '%v'", key, val)
 	}
 
 	lt.attributes[key] = value
 }
 
 // SegmentStart starts a local segment and keeps track of all opened segments
-func (lt *LocalTransaction) SegmentStart(name string) {
+func (lt *LocalTransaction) SegmentStart(name string) error {
 	log.Printf("Segment start: %s \n", name)
 
-	lt.segments = append(lt.segments, name)
+	lt.segmentContainer.segments = append(lt.segmentContainer.segments, name)
+
+	return nil
 }
 
 // SegmentEnd ends the current open segment (LIFO) and keeps track of all opened segments
-func (lt *LocalTransaction) SegmentEnd() {
-	i := len(lt.segments) - 1
+func (lt *LocalTransaction) SegmentEnd() error {
+	i := len(lt.segmentContainer.segments) - 1
 
-	log.Printf("Segment end: %s \n", lt.segments[i])
+	if i < 0 {
+		return errors.New("Error trying to end segment. No open segment left")
+	}
+
+	log.Printf("Segment end: %s \n", lt.segmentContainer.segments[i])
 
 	nSegment := make([]string, i)
 
-	copy(nSegment, lt.segments[:i])
+	copy(nSegment, lt.segmentContainer.segments[:i])
 
-	lt.segments = nSegment
+	lt.segmentContainer.segments = nSegment
+
+	return nil
 }
 
 // Error logs errors in the transaction
-func (lt *LocalTransaction) Error(readCloser io.ReadCloser) {
+func (lt *LocalTransaction) Error(readCloser io.ReadCloser) error {
 	// max bytes available for the error message
 	errMsg := make([]byte, telemetry.ErrorBytesSize)
 
 	_, err := readCloser.Read(errMsg)
 	if err != nil {
 		readCloser.Close()
-		log.Panicln("error while reading err message")
+		return errors.New("error while reading err message")
 	}
 	readCloser.Close()
 
@@ -87,17 +109,19 @@ func (lt *LocalTransaction) Error(readCloser io.ReadCloser) {
 	log.Printf("- ERROR START -\nTrace: %s\nTransaction: %s\nSegment: %s\nMessage: %s\nAttributes: %+v\n- ERROR END -\n",
 		lt.trace,
 		lt.transaction,
-		lt.segments[len(lt.segments)-1],
+		lt.segmentContainer.segments[len(lt.segmentContainer.segments)-1],
 		errLog,
 		lt.attributes)
+
+	return nil
 }
 
 // Info logs information in the transaction
-func (lt *LocalTransaction) Info(readCloser io.ReadCloser) {
+func (lt *LocalTransaction) Info(readCloser io.ReadCloser) error {
 	infoMsg, err := io.ReadAll(readCloser)
 	if err != nil {
 		readCloser.Close()
-		log.Panicln("error while reading info message")
+		return errors.New("error while reading info message")
 	}
 	readCloser.Close()
 
@@ -106,29 +130,38 @@ func (lt *LocalTransaction) Info(readCloser io.ReadCloser) {
 	log.Printf("- INFO START -\nTrace: %s\nTransaction: %s\nSegment: %s\nMessage: %s\nAttributes: %+v\n- INFO END -\n",
 		lt.trace,
 		lt.transaction,
-		lt.segments[len(lt.segments)-1],
+		lt.segmentContainer.segments[len(lt.segmentContainer.segments)-1],
 		infoLog,
 		lt.attributes)
+
+	return nil
 }
 
 // Done ends the transaction
-func (lt *LocalTransaction) Done() {
+func (lt *LocalTransaction) Done() error {
 	log.Printf("Transaction end: %s \n", lt.transaction)
+
+	return nil
 }
 
 // CreateTrace creates a trace for the transaction
-func (lt *LocalTransaction) CreateTrace() string {
-	uuid, _ := uuid.NewUUID()
+func (lt *LocalTransaction) CreateTrace() (string, error) {
+	uuid, err := uuid.NewUUID()
+	if err != nil {
+		return "", err
+	}
 
-	return uuid.String()
+	return uuid.String(), nil
 }
 
 // SetTrace sets a trace for the transaction
-func (lt *LocalTransaction) SetTrace(trace string) {
+func (lt *LocalTransaction) SetTrace(trace string) error {
 	lt.trace = trace
+
+	return nil
 }
 
 // Trace returns the current ttrace for the transaction
-func (lt *LocalTransaction) Trace() string {
-	return lt.trace
+func (lt *LocalTransaction) Trace() (string, error) {
+	return lt.trace, nil
 }
