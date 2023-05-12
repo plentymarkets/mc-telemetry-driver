@@ -37,13 +37,13 @@ func (ld LocalDriver) Start(name string) (telemetry.Transaction, error) {
 // LocalTransaction used for local transactions
 type LocalTransaction struct {
 	transaction      string
-	segmentContainer SegmentContainer
+	segmentContainer LocalSegmentContainer
 	attributes       map[string]any
 	trace            string
 }
 
-// SegmentContainer used for segment handling
-type SegmentContainer struct {
+// LocalSegmentContainer used for segment handling
+type LocalSegmentContainer struct {
 	segments   []string
 	attributes map[string]map[string]any
 	mutex      sync.RWMutex
@@ -58,7 +58,7 @@ func (lt *LocalTransaction) AddTransactionAttribute(key string, value any) error
 
 	val, ok := lt.attributes[key]
 	if ok {
-		return fmt.Errorf("Transaction attribute '%s' already set with value '%v'", key, val)
+		return fmt.Errorf("transaction attribute '%s' already set with value '%v'", key, val)
 	}
 
 	lt.attributes[key] = value
@@ -73,7 +73,7 @@ func (lt *LocalTransaction) AddSegmentAttribute(key string, value any) error {
 	defer lt.segmentContainer.mutex.Unlock()
 
 	if len(lt.segmentContainer.segments) == 0 {
-		return fmt.Errorf("can not add attribute to not existing segment. Key: %s Value: %s\n", key, value)
+		return fmt.Errorf("can not add attribute to not existing segment. Key: %s Value: %s", key, value)
 	}
 
 	if lt.segmentContainer.attributes == nil {
@@ -84,7 +84,7 @@ func (lt *LocalTransaction) AddSegmentAttribute(key string, value any) error {
 
 	val, ok := lt.segmentContainer.attributes[currentOpenSegment][key]
 	if ok {
-		return fmt.Errorf("Segment attribute '%s' already set with value '%v'", key, val)
+		return fmt.Errorf("segment attribute '%s' already set with value '%v'", key, val)
 	}
 
 	lt.segmentContainer.attributes[currentOpenSegment][key] = value
