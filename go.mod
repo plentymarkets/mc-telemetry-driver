@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/newrelic/go-agent/v3 v3.21.1
-	github.com/plentymarkets/mc-telemetry v0.0.4
+	github.com/plentymarkets/mc-telemetry v0.0.6
 	github.com/spf13/viper v1.15.0
 )
 
