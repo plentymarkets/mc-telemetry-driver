@@ -96,7 +96,37 @@ func (nrt *NewRelicTransaction) AddTransactionAttribute(key string, value any) e
 func (nrt *NewRelicTransaction) SegmentStart(name string) error {
 	segment := nrt.transaction.StartSegment(name)
 
-	nrt.segments = append(nrt.segments, *segment)
+	nrt.segmentContainer.segments = append(nrt.segmentContainer.segments, *segment)
+
+	return nil
+}
+
+// AddSegmentAttribute adds an attribute to the currently open segment
+// - Thread safe -
+func (nrt *NewRelicTransaction) AddSegmentAttribute(key string, value any) error {
+	nrt.segmentContainer.mutex.Lock()
+	defer nrt.segmentContainer.mutex.Unlock()
+
+	if len(nrt.segmentContainer.segments) == 0 {
+		return fmt.Errorf("can not add attribute to not existing segment. Key: %s Value: %s", key, value)
+	}
+
+	if nrt.segmentContainer.attributes == nil {
+		nrt.segmentContainer.attributes = make(map[string]map[string]any)
+	}
+
+	currentOpenSegment := nrt.segmentContainer.segments[len(nrt.segmentContainer.segments)-1]
+
+	val, ok := nrt.segmentContainer.attributes[currentOpenSegment.Name][key]
+	if ok {
+		return fmt.Errorf("segment attribute '%s' already set with value '%v'", key, val)
+	}
+
+	nrt.segmentContainer.attributes[currentOpenSegment.Name][key] = value
+
+	currentOpenSegment.AddAttribute(key, value)
+
+	return nil
 }
 
 // SegmentEnd ends the current open segment (LIFO) and keeps track of all opened segments
