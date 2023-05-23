@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"strings"
 	"sync"
 
 	"github.com/google/uuid"
@@ -138,12 +139,32 @@ func (lt *LocalTransaction) Error(readCloser io.ReadCloser) error {
 
 	errLog := string(errMsg)
 
-	log.Printf("- ERROR START -\nTrace: %s\nTransaction: %s\nSegment: %s\nMessage: %s\nAttributes: %+v\n- ERROR END -\n",
-		lt.trace,
-		lt.transaction,
-		lt.segmentContainer.segments[len(lt.segmentContainer.segments)-1],
-		errLog,
-		lt.attributes)
+	segment := lt.segmentContainer.segments[len(lt.segmentContainer.segments)-1]
+
+	builder := strings.Builder{}
+	builder.WriteString("- ERROR START -")
+	builder.WriteString("\n")
+	builder.WriteString("Trace: ")
+	builder.WriteString(lt.trace)
+	builder.WriteString("\n")
+	builder.WriteString("Transaction: ")
+	builder.WriteString(lt.transaction)
+	builder.WriteString("\n")
+	builder.WriteString("Transaction-Attributes: ")
+	builder.WriteString(fmt.Sprintf("%+v", lt.attributes))
+	builder.WriteString("\n")
+	builder.WriteString("Segment: ")
+	builder.WriteString(segment)
+	builder.WriteString("\n")
+	builder.WriteString("Segment-Attributes: ")
+	builder.WriteString(fmt.Sprintf("%+v", lt.segmentContainer.attributes[segment]))
+	builder.WriteString("\n")
+	builder.WriteString("Error: ")
+	builder.WriteString(errLog)
+	builder.WriteString("\n")
+	builder.WriteString("- ERROR END -")
+
+	log.Println(builder.String())
 
 	return nil
 }
@@ -159,12 +180,32 @@ func (lt *LocalTransaction) Info(readCloser io.ReadCloser) error {
 
 	infoLog := string(infoMsg)
 
-	log.Printf("- INFO START -\nTrace: %s\nTransaction: %s\nSegment: %s\nMessage: %s\nAttributes: %+v\n- INFO END -\n",
-		lt.trace,
-		lt.transaction,
-		lt.segmentContainer.segments[len(lt.segmentContainer.segments)-1],
-		infoLog,
-		lt.attributes)
+	segment := lt.segmentContainer.segments[len(lt.segmentContainer.segments)-1]
+
+	builder := strings.Builder{}
+	builder.WriteString("- INFO START -")
+	builder.WriteString("\n")
+	builder.WriteString("Trace: ")
+	builder.WriteString(lt.trace)
+	builder.WriteString("\n")
+	builder.WriteString("Transaction: ")
+	builder.WriteString(lt.transaction)
+	builder.WriteString("\n")
+	builder.WriteString("Transaction-Attributes: ")
+	builder.WriteString(fmt.Sprintf("%+v", lt.attributes))
+	builder.WriteString("\n")
+	builder.WriteString("Segment: ")
+	builder.WriteString(segment)
+	builder.WriteString("\n")
+	builder.WriteString("Segment-Attributes: ")
+	builder.WriteString(fmt.Sprintf("%+v", lt.segmentContainer.attributes[segment]))
+	builder.WriteString("\n")
+	builder.WriteString("Message: ")
+	builder.WriteString(infoLog)
+	builder.WriteString("\n")
+	builder.WriteString("- INFO END -")
+
+	fmt.Println(builder.String())
 
 	return nil
 }
