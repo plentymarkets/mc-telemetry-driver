@@ -82,6 +82,10 @@ func (lt *LocalTransaction) AddSegmentAttribute(key string, value any) error {
 
 	currentOpenSegment := lt.segmentContainer.segments[len(lt.segmentContainer.segments)-1]
 
+	if lt.segmentContainer.attributes[currentOpenSegment] == nil {
+		lt.segmentContainer.attributes[currentOpenSegment] = make(map[string]any)
+	}
+
 	val, ok := lt.segmentContainer.attributes[currentOpenSegment][key]
 	if ok {
 		return fmt.Errorf("segment attribute '%s' already set with value '%v'", key, val)

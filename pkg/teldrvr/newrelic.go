@@ -117,6 +117,10 @@ func (nrt *NewRelicTransaction) AddSegmentAttribute(key string, value any) error
 
 	currentOpenSegment := nrt.segmentContainer.segments[len(nrt.segmentContainer.segments)-1]
 
+	if nrt.segmentContainer.attributes[currentOpenSegment.Name] == nil {
+		nrt.segmentContainer.attributes[currentOpenSegment.Name] = make(map[string]any)
+	}
+
 	val, ok := nrt.segmentContainer.attributes[currentOpenSegment.Name][key]
 	if ok {
 		return fmt.Errorf("segment attribute '%s' already set with value '%v'", key, val)
