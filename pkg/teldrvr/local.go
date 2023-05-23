@@ -139,7 +139,10 @@ func (lt *LocalTransaction) Error(readCloser io.ReadCloser) error {
 
 	errLog := string(errMsg)
 
-	segment := lt.segmentContainer.segments[len(lt.segmentContainer.segments)-1]
+	segmentExist := false
+	if len(lt.segmentContainer.segments) > 0 {
+		segmentExist = true
+	}
 
 	builder := strings.Builder{}
 	builder.WriteString("- ERROR START -")
@@ -153,12 +156,16 @@ func (lt *LocalTransaction) Error(readCloser io.ReadCloser) error {
 	builder.WriteString("Transaction-Attributes: ")
 	builder.WriteString(fmt.Sprintf("%+v", lt.attributes))
 	builder.WriteString("\n")
-	builder.WriteString("Segment: ")
-	builder.WriteString(segment)
-	builder.WriteString("\n")
-	builder.WriteString("Segment-Attributes: ")
-	builder.WriteString(fmt.Sprintf("%+v", lt.segmentContainer.attributes[segment]))
-	builder.WriteString("\n")
+	if segmentExist {
+		segment := lt.segmentContainer.segments[len(lt.segmentContainer.segments)-1]
+
+		builder.WriteString("Segment: ")
+		builder.WriteString(segment)
+		builder.WriteString("\n")
+		builder.WriteString("Segment-Attributes: ")
+		builder.WriteString(fmt.Sprintf("%+v", lt.segmentContainer.attributes[segment]))
+		builder.WriteString("\n")
+	}
 	builder.WriteString("Error: ")
 	builder.WriteString(errLog)
 	builder.WriteString("\n")
@@ -180,7 +187,10 @@ func (lt *LocalTransaction) Info(readCloser io.ReadCloser) error {
 
 	infoLog := string(infoMsg)
 
-	segment := lt.segmentContainer.segments[len(lt.segmentContainer.segments)-1]
+	segmentExist := false
+	if len(lt.segmentContainer.segments) > 0 {
+		segmentExist = true
+	}
 
 	builder := strings.Builder{}
 	builder.WriteString("- INFO START -")
@@ -194,12 +204,16 @@ func (lt *LocalTransaction) Info(readCloser io.ReadCloser) error {
 	builder.WriteString("Transaction-Attributes: ")
 	builder.WriteString(fmt.Sprintf("%+v", lt.attributes))
 	builder.WriteString("\n")
-	builder.WriteString("Segment: ")
-	builder.WriteString(segment)
-	builder.WriteString("\n")
-	builder.WriteString("Segment-Attributes: ")
-	builder.WriteString(fmt.Sprintf("%+v", lt.segmentContainer.attributes[segment]))
-	builder.WriteString("\n")
+	if segmentExist {
+		segment := lt.segmentContainer.segments[len(lt.segmentContainer.segments)-1]
+
+		builder.WriteString("Segment: ")
+		builder.WriteString(segment)
+		builder.WriteString("\n")
+		builder.WriteString("Segment-Attributes: ")
+		builder.WriteString(fmt.Sprintf("%+v", lt.segmentContainer.attributes[segment]))
+		builder.WriteString("\n")
+	}
 	builder.WriteString("Message: ")
 	builder.WriteString(infoLog)
 	builder.WriteString("\n")
