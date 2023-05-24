@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -227,6 +228,7 @@ func (lt *LocalTransaction) Info(readCloser io.ReadCloser) error {
 // Done ends the transaction
 func (lt *LocalTransaction) Done() error {
 	log.Printf("Transaction end: %s \n", lt.transaction)
+	lt.eraseMemory()
 
 	return nil
 }
@@ -251,4 +253,17 @@ func (lt *LocalTransaction) SetTrace(trace string) error {
 // Trace returns the current ttrace for the transaction
 func (lt *LocalTransaction) Trace() (string, error) {
 	return lt.trace, nil
+}
+
+// eraseMemory erase any memory the transaction allocated
+func (lt *LocalTransaction) eraseMemory() {
+	lt.attributes = nil
+	lt.segmentContainer.segments = nil
+	lt.segmentContainer.attributes = nil
+
+	// we need to collect the garbage manually here because maps in go do have some problems with the garbage collection
+	// the runtime.GC method is used to manually free the memory
+	// this problem is already known since 2017
+	// https://github.com/golang/go/issues/20135
+	runtime.GC()
 }
