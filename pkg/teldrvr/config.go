@@ -26,7 +26,7 @@ func GetConfig() (Config, error) {
 	viper.BindEnv("telemetry.app", "TELEMETRY_APP")
 
 	// specifics
-	viper.BindEnv("telemetry.newrelic.licenceKey", "TELEMETRY_NEWRELIC_LICENCE_KEY")
+	viper.BindEnv("telemetry.newrelic.licenceKey", "NEW_RELIC_LICENSE_KEY")
 
 	viper.AutomaticEnv()
 
