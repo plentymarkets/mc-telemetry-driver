@@ -228,7 +228,6 @@ func (lt *LocalTransaction) Info(readCloser io.ReadCloser) error {
 // Done ends the transaction
 func (lt *LocalTransaction) Done() error {
 	log.Printf("Transaction end: %s \n", lt.transaction)
-	lt.eraseMemory()
 
 	return nil
 }
@@ -255,8 +254,8 @@ func (lt *LocalTransaction) Trace() (string, error) {
 	return lt.trace, nil
 }
 
-// eraseMemory erase any memory the transaction allocated
-func (lt *LocalTransaction) eraseMemory() {
+// Erase any memory the transaction allocated
+func (lt *LocalTransaction) Erase() {
 	lt.attributes = nil
 	lt.segmentContainer.segments = nil
 	lt.segmentContainer.attributes = nil

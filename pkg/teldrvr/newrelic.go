@@ -180,7 +180,6 @@ func (nrt *NewRelicTransaction) Info(readCloser io.ReadCloser) error {
 // Done ends a transaction in new relic
 func (nrt *NewRelicTransaction) Done() error {
 	nrt.transaction.End()
-	nrt.eraseMemory()
 
 	return nil
 }
@@ -207,8 +206,8 @@ func (nrt *NewRelicTransaction) Trace() (string, error) {
 	return nrt.trace, nil
 }
 
-// eraseMemory erase any memory the transaction allocated
-func (nrt *NewRelicTransaction) eraseMemory() {
+// Erase any memory the transaction allocated
+func (nrt *NewRelicTransaction) Erase() {
 	nrt.attributes = nil
 	nrt.segmentContainer.segments = nil
 	nrt.segmentContainer.attributes = nil
