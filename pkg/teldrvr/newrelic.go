@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -203,4 +204,17 @@ func (nrt *NewRelicTransaction) SetTrace(trace string) error {
 // Trace returns the current ttrace for the transaction
 func (nrt *NewRelicTransaction) Trace() (string, error) {
 	return nrt.trace, nil
+}
+
+// Erase any memory the transaction allocated
+func (nrt *NewRelicTransaction) Erase() {
+	nrt.attributes = nil
+	nrt.segmentContainer.segments = nil
+	nrt.segmentContainer.attributes = nil
+
+	// we need to collect the garbage manually here because maps in go do have some problems with the garbage collection
+	// the runtime.GC method is used to manually free the memory
+	// this problem is already known since 2017
+	// https://github.com/golang/go/issues/20135
+	runtime.GC()
 }
