@@ -4,19 +4,18 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"runtime"
-	"strings"
 	"sync"
 
 	"github.com/google/uuid"
 
 	"github.com/plentymarkets/mc-telemetry/pkg/telemetry"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
 /** DRIVER NAME **/
-const zerologDriver = "local"
+const zerologDriver = "zerolog"
 
 func init() {
 	zld := ZeroLogDriver{}
@@ -30,10 +29,13 @@ type ZeroLogDriver struct{}
 
 // Start starts a transaction
 func (zld ZeroLogDriver) Start(name string) (telemetry.Transaction, error) {
-	log.Printf("Transaction start: %s \n", name)
+	zlt := zerolog.New(os.Stderr).With().Timestamp().Logger()
+	msg := fmt.Sprintf("Transaction start: %s \n", name)
+
+	zlt.Info().Msg(msg)
 
 	lt := ZeroLogTransaction{
-		transaction: name,
+		transaction: zlt,
 	}
 
 	return &lt, nil
@@ -41,7 +43,7 @@ func (zld ZeroLogDriver) Start(name string) (telemetry.Transaction, error) {
 
 // ZeroLogTransaction used for local transactions
 type ZeroLogTransaction struct {
-	transaction      string
+	transaction      zerolog.Logger
 	segmentContainer ZeroLogSegmentContainer
 	attributes       map[string]any
 	trace            string
@@ -106,7 +108,7 @@ func (zlt *ZeroLogTransaction) SegmentStart(name string) error {
 
 	msg := fmt.Sprintf("Segment start: %s \n", name)
 
-	log.Info().Str("level", "info").Msg(msg)
+	zlt.transaction.Info().Msg(msg)
 
 	zlt.segmentContainer.segments = append(zlt.segmentContainer.segments, name)
 
@@ -123,7 +125,7 @@ func (zlt *ZeroLogTransaction) SegmentEnd() error {
 
 	msg := fmt.Sprintf("Segment end: %s \n", zlt.segmentContainer.segments[i])
 
-	log.Info().Str("level", "info").Msg(msg)
+	zlt.transaction.Info().Msg(msg)
 
 	nSegment := make([]string, i)
 
@@ -146,48 +148,19 @@ func (zlt *ZeroLogTransaction) Error(readCloser io.ReadCloser) error {
 	}
 	readCloser.Close()
 
-	errLog := string(errMsg)
+	errLog := errors.New(string(errMsg))
 
-	segmentExist := false
-	if len(zlt.segmentContainer.segments) > 0 {
-		segmentExist = true
-	}
-
-	builder := strings.Builder{}
-	builder.WriteString("- ERROR START -")
-	builder.WriteString("\n")
-	builder.WriteString("Trace: ")
-	builder.WriteString(zlt.trace)
-	builder.WriteString("\n")
-	builder.WriteString("Transaction: ")
-	builder.WriteString(zlt.transaction)
-	builder.WriteString("\n")
-	builder.WriteString("Transaction-Attributes: ")
-	builder.WriteString(fmt.Sprintf("%+v", zlt.attributes))
-	builder.WriteString("\n")
-	if segmentExist {
-		segment := zlt.segmentContainer.segments[len(zlt.segmentContainer.segments)-1]
-
-		builder.WriteString("Segment: ")
-		builder.WriteString(segment)
-		builder.WriteString("\n")
-		builder.WriteString("Segment-Attributes: ")
-		builder.WriteString(fmt.Sprintf("%+v", zlt.segmentContainer.attributes[segment]))
-		builder.WriteString("\n")
-	}
-	builder.WriteString("Error: ")
-	builder.WriteString(errLog)
-	builder.WriteString("\n")
-	builder.WriteString("- ERROR END -")
-
-	log.Error().Str("level", "error").Msg(builder.String())
+	zlt.transaction.Err(errLog)
 
 	return nil
 }
 
-// Info logs information in the transaction
+// Info logs errors in the transaction
 func (zlt *ZeroLogTransaction) Info(readCloser io.ReadCloser) error {
-	infoMsg, err := io.ReadAll(readCloser)
+	// max bytes available for the info message
+	infoMsg := make([]byte, telemetry.ErrorBytesSize)
+
+	_, err := readCloser.Read(infoMsg)
 	if err != nil {
 		readCloser.Close()
 		return errors.New("error while reading info message")
@@ -196,39 +169,7 @@ func (zlt *ZeroLogTransaction) Info(readCloser io.ReadCloser) error {
 
 	infoLog := string(infoMsg)
 
-	segmentExist := false
-	if len(zlt.segmentContainer.segments) > 0 {
-		segmentExist = true
-	}
-
-	builder := strings.Builder{}
-	builder.WriteString("- INFO START -")
-	builder.WriteString("\n")
-	builder.WriteString("Trace: ")
-	builder.WriteString(zlt.trace)
-	builder.WriteString("\n")
-	builder.WriteString("Transaction: ")
-	builder.WriteString(zlt.transaction)
-	builder.WriteString("\n")
-	builder.WriteString("Transaction-Attributes: ")
-	builder.WriteString(fmt.Sprintf("%+v", zlt.attributes))
-	builder.WriteString("\n")
-	if segmentExist {
-		segment := zlt.segmentContainer.segments[len(zlt.segmentContainer.segments)-1]
-
-		builder.WriteString("Segment: ")
-		builder.WriteString(segment)
-		builder.WriteString("\n")
-		builder.WriteString("Segment-Attributes: ")
-		builder.WriteString(fmt.Sprintf("%+v", zlt.segmentContainer.attributes[segment]))
-		builder.WriteString("\n")
-	}
-	builder.WriteString("Message: ")
-	builder.WriteString(infoLog)
-	builder.WriteString("\n")
-	builder.WriteString("- INFO END -")
-
-	log.Info().Str("level", "info").Msg(builder.String())
+	zlt.transaction.Info().Msg(infoLog)
 
 	return nil
 }
@@ -237,7 +178,7 @@ func (zlt *ZeroLogTransaction) Info(readCloser io.ReadCloser) error {
 func (zlt *ZeroLogTransaction) Done() error {
 	msg := fmt.Sprintf("Transaction end: %s \n", zlt.transaction)
 
-	log.Info().Str("level", "info").Msg(msg)
+	zlt.transaction.Info().Msg(msg)
 
 	return nil
 }
