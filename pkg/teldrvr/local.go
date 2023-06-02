@@ -46,7 +46,7 @@ type LocalTransaction struct {
 
 // LocalSegmentContainer used for segment handling
 type LocalSegmentContainer struct {
-	segments   []string
+	segments   map[string]string
 	attributes map[string]map[string]any
 	mutex      sync.RWMutex
 }
@@ -70,64 +70,63 @@ func (lt *LocalTransaction) AddTransactionAttribute(key string, value any) error
 
 // AddSegmentAttribute adds an attribute to the currently open segment
 // - Thread safe -
-func (lt *LocalTransaction) AddSegmentAttribute(key string, value any) error {
+func (lt *LocalTransaction) AddSegmentAttribute(segmentID string, key string, value any) error {
 	lt.segmentContainer.mutex.Lock()
 	defer lt.segmentContainer.mutex.Unlock()
 
-	if len(lt.segmentContainer.segments) == 0 {
-		return fmt.Errorf("can not add attribute to not existing segment. Key: %s Value: %s", key, value)
+	segmentName, segmentExist := lt.segmentContainer.segments[segmentID]
+	if !segmentExist {
+		return fmt.Errorf("can not add attribute to not existing segment.\nSegmentID: %s\nKey: %s\nValue: %s", segmentID, key, value)
 	}
 
 	if lt.segmentContainer.attributes == nil {
 		lt.segmentContainer.attributes = make(map[string]map[string]any)
 	}
 
-	currentOpenSegment := lt.segmentContainer.segments[len(lt.segmentContainer.segments)-1]
-
-	if lt.segmentContainer.attributes[currentOpenSegment] == nil {
-		lt.segmentContainer.attributes[currentOpenSegment] = make(map[string]any)
+	if lt.segmentContainer.attributes[segmentID] == nil {
+		lt.segmentContainer.attributes[segmentID] = make(map[string]any)
 	}
 
-	val, ok := lt.segmentContainer.attributes[currentOpenSegment][key]
-	if ok {
-		return fmt.Errorf("segment attribute '%s' already set with value '%v'", key, val)
+	attribute, attributeExist := lt.segmentContainer.attributes[segmentID][key]
+	if attributeExist {
+		return fmt.Errorf("segment attribute already exist.\nSegment: %s\nSegmentID: %s\nKey: %s\nAlready set value: %v", segmentName, segmentID, key, attribute)
 	}
 
-	lt.segmentContainer.attributes[currentOpenSegment][key] = value
+	lt.segmentContainer.attributes[segmentID][key] = value
 
 	return nil
 }
 
 // SegmentStart starts a local segment and keeps track of all opened segments
-func (lt *LocalTransaction) SegmentStart(name string) error {
-	log.Printf("Segment start: %s \n", name)
+func (lt *LocalTransaction) SegmentStart(segmentID string, name string) error {
+	log.Printf("Segment start[%s]: %s \n", segmentID, name)
 
-	lt.segmentContainer.segments = append(lt.segmentContainer.segments, name)
+	if lt.segmentContainer.segments == nil {
+		lt.segmentContainer.segments = make(map[string]string)
+	}
+
+	lt.segmentContainer.segments[segmentID] = name
 
 	return nil
 }
 
 // SegmentEnd ends the current open segment (LIFO) and keeps track of all opened segments
-func (lt *LocalTransaction) SegmentEnd() error {
-	i := len(lt.segmentContainer.segments) - 1
-
-	if i < 0 {
-		return errors.New("Error trying to end segment. No open segment left")
+func (lt *LocalTransaction) SegmentEnd(segmentID string) error {
+	val, ok := lt.segmentContainer.segments[segmentID]
+	if !ok {
+		return fmt.Errorf("Error trying to end segment. Segment is not open.\nSegmentID: %s", segmentID)
 	}
 
-	log.Printf("Segment end: %s \n", lt.segmentContainer.segments[i])
+	log.Printf("Segment end[%s]: %s\n", segmentID, val)
 
-	nSegment := make([]string, i)
-
-	copy(nSegment, lt.segmentContainer.segments[:i])
-
-	lt.segmentContainer.segments = nSegment
+	delete(lt.segmentContainer.segments, segmentID)
+	delete(lt.segmentContainer.attributes, segmentID)
 
 	return nil
 }
 
-// Error logs errors in the transaction
-func (lt *LocalTransaction) Error(readCloser io.ReadCloser) error {
+// Error logs errors in the transaction/segment
+func (lt *LocalTransaction) Error(segmentID string, readCloser io.ReadCloser) error {
 	// max bytes available for the error message
 	errMsg := make([]byte, telemetry.ErrorBytesSize)
 
@@ -140,9 +139,12 @@ func (lt *LocalTransaction) Error(readCloser io.ReadCloser) error {
 
 	errLog := string(errMsg)
 
-	segmentExist := false
-	if len(lt.segmentContainer.segments) > 0 {
-		segmentExist = true
+	inSegment := false
+	if len(segmentID) > 0 {
+		_, ok := lt.segmentContainer.segments[segmentID]
+		if ok {
+			inSegment = true
+		}
 	}
 
 	builder := strings.Builder{}
@@ -157,14 +159,15 @@ func (lt *LocalTransaction) Error(readCloser io.ReadCloser) error {
 	builder.WriteString("Transaction-Attributes: ")
 	builder.WriteString(fmt.Sprintf("%+v", lt.attributes))
 	builder.WriteString("\n")
-	if segmentExist {
-		segment := lt.segmentContainer.segments[len(lt.segmentContainer.segments)-1]
-
+	if inSegment {
 		builder.WriteString("Segment: ")
-		builder.WriteString(segment)
+		builder.WriteString(lt.segmentContainer.segments[segmentID])
+		builder.WriteString("\n")
+		builder.WriteString("SegmentID: ")
+		builder.WriteString(segmentID)
 		builder.WriteString("\n")
 		builder.WriteString("Segment-Attributes: ")
-		builder.WriteString(fmt.Sprintf("%+v", lt.segmentContainer.attributes[segment]))
+		builder.WriteString(fmt.Sprintf("%+v", lt.segmentContainer.attributes[segmentID]))
 		builder.WriteString("\n")
 	}
 	builder.WriteString("Error: ")
@@ -178,7 +181,7 @@ func (lt *LocalTransaction) Error(readCloser io.ReadCloser) error {
 }
 
 // Info logs information in the transaction
-func (lt *LocalTransaction) Info(readCloser io.ReadCloser) error {
+func (lt *LocalTransaction) Info(segmentID string, readCloser io.ReadCloser) error {
 	infoMsg, err := io.ReadAll(readCloser)
 	if err != nil {
 		readCloser.Close()
@@ -188,9 +191,12 @@ func (lt *LocalTransaction) Info(readCloser io.ReadCloser) error {
 
 	infoLog := string(infoMsg)
 
-	segmentExist := false
-	if len(lt.segmentContainer.segments) > 0 {
-		segmentExist = true
+	inSegment := false
+	if len(segmentID) > 0 {
+		_, ok := lt.segmentContainer.segments[segmentID]
+		if ok {
+			inSegment = true
+		}
 	}
 
 	builder := strings.Builder{}
@@ -205,14 +211,15 @@ func (lt *LocalTransaction) Info(readCloser io.ReadCloser) error {
 	builder.WriteString("Transaction-Attributes: ")
 	builder.WriteString(fmt.Sprintf("%+v", lt.attributes))
 	builder.WriteString("\n")
-	if segmentExist {
-		segment := lt.segmentContainer.segments[len(lt.segmentContainer.segments)-1]
-
+	if inSegment {
 		builder.WriteString("Segment: ")
-		builder.WriteString(segment)
+		builder.WriteString(lt.segmentContainer.segments[segmentID])
+		builder.WriteString("\n")
+		builder.WriteString("SegmentID: ")
+		builder.WriteString(segmentID)
 		builder.WriteString("\n")
 		builder.WriteString("Segment-Attributes: ")
-		builder.WriteString(fmt.Sprintf("%+v", lt.segmentContainer.attributes[segment]))
+		builder.WriteString(fmt.Sprintf("%+v", lt.segmentContainer.attributes[segmentID]))
 		builder.WriteString("\n")
 	}
 	builder.WriteString("Message: ")

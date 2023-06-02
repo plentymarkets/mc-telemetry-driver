@@ -73,7 +73,7 @@ type NewRelicTransaction struct {
 
 // NewRelicSegmentContainer used for segment handling
 type NewRelicSegmentContainer struct {
-	segments   []newrelic.Segment
+	segments   map[string]newrelic.Segment
 	attributes map[string]map[string]any
 	mutex      sync.RWMutex
 }
@@ -94,67 +94,66 @@ func (nrt *NewRelicTransaction) AddTransactionAttribute(key string, value any) e
 }
 
 // SegmentStart starts a segment in new relic and keeps track of all opened segments
-func (nrt *NewRelicTransaction) SegmentStart(name string) error {
+func (nrt *NewRelicTransaction) SegmentStart(segmentID string, name string) error {
 	segment := nrt.transaction.StartSegment(name)
 
-	nrt.segmentContainer.segments = append(nrt.segmentContainer.segments, *segment)
+	if nrt.segmentContainer.segments == nil {
+		nrt.segmentContainer.segments = make(map[string]newrelic.Segment)
+	}
+
+	nrt.segmentContainer.segments[segmentID] = *segment
 
 	return nil
 }
 
 // AddSegmentAttribute adds an attribute to the currently open segment
 // - Thread safe -
-func (nrt *NewRelicTransaction) AddSegmentAttribute(key string, value any) error {
+func (nrt *NewRelicTransaction) AddSegmentAttribute(segmentID string, key string, value any) error {
 	nrt.segmentContainer.mutex.Lock()
 	defer nrt.segmentContainer.mutex.Unlock()
 
-	if len(nrt.segmentContainer.segments) == 0 {
-		return fmt.Errorf("can not add attribute to not existing segment. Key: %s Value: %s", key, value)
+	segment, segmentExist := nrt.segmentContainer.segments[segmentID]
+	if !segmentExist {
+		return fmt.Errorf("can not add attribute to not existing segment.\nSegmentID: %s\nKey: %s\nValue: %s", segmentID, key, value)
 	}
 
 	if nrt.segmentContainer.attributes == nil {
 		nrt.segmentContainer.attributes = make(map[string]map[string]any)
 	}
 
-	currentOpenSegment := nrt.segmentContainer.segments[len(nrt.segmentContainer.segments)-1]
-
-	if nrt.segmentContainer.attributes[currentOpenSegment.Name] == nil {
-		nrt.segmentContainer.attributes[currentOpenSegment.Name] = make(map[string]any)
+	if nrt.segmentContainer.attributes[segmentID] == nil {
+		nrt.segmentContainer.attributes[segmentID] = make(map[string]any)
 	}
 
-	val, ok := nrt.segmentContainer.attributes[currentOpenSegment.Name][key]
-	if ok {
-		return fmt.Errorf("segment attribute '%s' already set with value '%v'", key, val)
+	attribute, attributeExist := nrt.segmentContainer.attributes[segmentID][key]
+	if attributeExist {
+		return fmt.Errorf("segment attribute already exist.\nSegment: %s\nSegmentID: %s\nKey: %s\nAlready set value: %v", segment.Name, segmentID, key, attribute)
 	}
 
-	nrt.segmentContainer.attributes[currentOpenSegment.Name][key] = value
+	nrt.segmentContainer.attributes[segmentID][key] = value
 
-	currentOpenSegment.AddAttribute(key, value)
+	segment.AddAttribute(key, value)
 
 	return nil
 }
 
 // SegmentEnd ends the current open segment (LIFO) and keeps track of all opened segments
-func (nrt *NewRelicTransaction) SegmentEnd() error {
-	i := len(nrt.segmentContainer.segments) - 1
-
-	if i < 0 {
-		return errors.New("Error trying to end segment. No open segment left")
+func (nrt *NewRelicTransaction) SegmentEnd(segmentID string) error {
+	segment, ok := nrt.segmentContainer.segments[segmentID]
+	if !ok {
+		return fmt.Errorf("Error trying to end segment. Segment is not open.\nSegmentID: %s", segmentID)
 	}
 
-	nrt.segmentContainer.segments[i].End()
+	segment.End()
 
-	nSegment := make([]newrelic.Segment, i)
-
-	copy(nSegment, nrt.segmentContainer.segments[:i])
-
-	nrt.segmentContainer.segments = nSegment
+	delete(nrt.segmentContainer.segments, segmentID)
+	delete(nrt.segmentContainer.attributes, segmentID)
 
 	return nil
 }
 
 // Error logs errors in the transaction
-func (nrt *NewRelicTransaction) Error(readCloser io.ReadCloser) error {
+func (nrt *NewRelicTransaction) Error(_ string, readCloser io.ReadCloser) error {
 	// max bytes available for the error message
 	errMsg := make([]byte, telemetry.ErrorBytesSize)
 
@@ -173,7 +172,7 @@ func (nrt *NewRelicTransaction) Error(readCloser io.ReadCloser) error {
 }
 
 // Info [NOT IMPLEMENTED]
-func (nrt *NewRelicTransaction) Info(readCloser io.ReadCloser) error {
+func (nrt *NewRelicTransaction) Info(_ string, readCloser io.ReadCloser) error {
 	return nil
 }
 
