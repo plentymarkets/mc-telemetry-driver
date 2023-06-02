@@ -120,6 +120,7 @@ func (lt *LocalTransaction) SegmentEnd(segmentID string) error {
 	log.Printf("Segment end[%s]: %s\n", segmentID, val)
 
 	delete(lt.segmentContainer.segments, segmentID)
+	delete(lt.segmentContainer.attributes, segmentID)
 
 	return nil
 }
