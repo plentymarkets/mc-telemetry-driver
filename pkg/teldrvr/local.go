@@ -99,6 +99,8 @@ func (lt *LocalTransaction) AddSegmentAttribute(segmentID string, key string, va
 
 // SegmentStart starts a local segment and keeps track of all opened segments
 func (lt *LocalTransaction) SegmentStart(segmentID string, name string) error {
+	lt.segmentContainer.mutex.Lock()
+	defer lt.segmentContainer.mutex.Unlock()
 	log.Printf("Segment start[%s]: %s \n", segmentID, name)
 
 	if lt.segmentContainer.segments == nil {
@@ -112,6 +114,8 @@ func (lt *LocalTransaction) SegmentStart(segmentID string, name string) error {
 
 // SegmentEnd ends the current open segment (LIFO) and keeps track of all opened segments
 func (lt *LocalTransaction) SegmentEnd(segmentID string) error {
+	lt.segmentContainer.mutex.Lock()
+	defer lt.segmentContainer.mutex.Unlock()
 	val, ok := lt.segmentContainer.segments[segmentID]
 	if !ok {
 		return fmt.Errorf("Error trying to end segment. Segment is not open.\nSegmentID: %s", segmentID)

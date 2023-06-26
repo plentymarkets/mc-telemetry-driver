@@ -95,6 +95,8 @@ func (nrt *NewRelicTransaction) AddTransactionAttribute(key string, value any) e
 
 // SegmentStart starts a segment in new relic and keeps track of all opened segments
 func (nrt *NewRelicTransaction) SegmentStart(segmentID string, name string) error {
+	nrt.segmentContainer.mutex.Lock()
+	defer nrt.segmentContainer.mutex.Unlock()
 	segment := nrt.transaction.StartSegment(name)
 
 	if nrt.segmentContainer.segments == nil {
@@ -139,6 +141,8 @@ func (nrt *NewRelicTransaction) AddSegmentAttribute(segmentID string, key string
 
 // SegmentEnd ends the current open segment (LIFO) and keeps track of all opened segments
 func (nrt *NewRelicTransaction) SegmentEnd(segmentID string) error {
+	nrt.segmentContainer.mutex.Lock()
+	defer nrt.segmentContainer.mutex.Unlock()
 	segment, ok := nrt.segmentContainer.segments[segmentID]
 	if !ok {
 		return fmt.Errorf("Error trying to end segment. Segment is not open.\nSegmentID: %s", segmentID)
