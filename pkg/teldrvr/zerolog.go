@@ -243,8 +243,8 @@ func (zlt ZeroLogTransaction) Info(segmentID string, readCloser io.ReadCloser) e
 // Done ends the transaction
 func (zlt ZeroLogTransaction) Done() error {
 	msg := fmt.Sprintf("Transaction end: %s \n", zlt.transaction)
-
 	zlt.logTrace(msg)
+	zlt.Erase()
 
 	return nil
 }
