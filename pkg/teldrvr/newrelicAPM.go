@@ -15,7 +15,7 @@ import (
 )
 
 /** DRIVER NAME **/
-const newrelicDriver = "newrelic"
+const newrelicDriver = "newrelicAPM"
 
 func init() {
 	cfg, err := GetConfig()
