@@ -13,6 +13,8 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230530153820-e85fd2cbaebc // indirect
+	github.com/plentymarkets/mc-telemetry v0.0.11
+	github.com/spf13/viper v1.15.0
 )
 
 require (
