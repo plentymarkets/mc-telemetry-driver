@@ -68,6 +68,21 @@ func (lt *LocalTransaction) AddTransactionAttribute(key string, value any) error
 	return nil
 }
 
+// SegmentStart starts a local segment and keeps track of all opened segments
+func (lt *LocalTransaction) SegmentStart(segmentID string, name string) error {
+	lt.segmentContainer.mutex.Lock()
+	defer lt.segmentContainer.mutex.Unlock()
+	log.Printf("Segment start[%s]: %s \n", segmentID, name)
+
+	if lt.segmentContainer.segments == nil {
+		lt.segmentContainer.segments = make(map[string]string)
+	}
+
+	lt.segmentContainer.segments[segmentID] = name
+
+	return nil
+}
+
 // AddSegmentAttribute adds an attribute to the currently open segment
 // - Thread safe -
 func (lt *LocalTransaction) AddSegmentAttribute(segmentID string, key string, value any) error {
@@ -93,21 +108,6 @@ func (lt *LocalTransaction) AddSegmentAttribute(segmentID string, key string, va
 	}
 
 	lt.segmentContainer.attributes[segmentID][key] = value
-
-	return nil
-}
-
-// SegmentStart starts a local segment and keeps track of all opened segments
-func (lt *LocalTransaction) SegmentStart(segmentID string, name string) error {
-	lt.segmentContainer.mutex.Lock()
-	defer lt.segmentContainer.mutex.Unlock()
-	log.Printf("Segment start[%s]: %s \n", segmentID, name)
-
-	if lt.segmentContainer.segments == nil {
-		lt.segmentContainer.segments = make(map[string]string)
-	}
-
-	lt.segmentContainer.segments[segmentID] = name
 
 	return nil
 }
