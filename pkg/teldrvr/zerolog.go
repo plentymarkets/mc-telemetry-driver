@@ -46,7 +46,7 @@ func init() {
 		NewRelicApp: nra,
 	}
 
-	telemetry.RegisterDriver(newrelicDriver, zld)
+	telemetry.RegisterDriver(zerologDriver, zld)
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 }
 
