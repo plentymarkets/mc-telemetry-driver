@@ -1,0 +1,9 @@
+# you can copy this file into the same directory as your main go
+# and rename it to "app.yaml" to define config values for your local running
+# service. In production this file should not be used instead k8s should define
+# ENV variables
+
+# Defining your config values. The key defined in your config.go will be split at 
+# all dots. So our example of app.example will look like this:
+app:
+    example: "We loaded the value from a config file!"
