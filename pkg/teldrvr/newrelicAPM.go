@@ -71,12 +71,13 @@ type NewRelicSegmentContainer struct {
 
 // APMTransaction used for new relic transactions
 type APMTransaction struct {
-	transaction      *newrelic.Transaction
-	segmentContainer NewRelicSegmentContainer
-	attributes       map[string]any
-	trace            string
-	traceID          string
-	processID        string
+	transaction            *newrelic.Transaction
+	segmentContainer       NewRelicSegmentContainer
+	attributes             map[string]any
+	trace                  string
+	traceID                string
+	processID              string
+	segmentsStartWasLogged map[string]struct{}
 }
 
 func newAPMTransaction(transaction *newrelic.Transaction) *APMTransaction {
@@ -191,6 +192,12 @@ func (t *APMTransaction) Error(_ string, readCloser io.ReadCloser) error {
 
 // Info [NOT IMPLEMENTED]
 func (t *APMTransaction) Info(_ string, readCloser io.ReadCloser) error {
+	return nil
+}
+
+// Debug [NOT IMPLEMENTED]
+func (t *APMTransaction) Debug(_ string, readCloser io.ReadCloser) error {
+	// TODO - Will be implemented as in Error()
 	return nil
 }
 

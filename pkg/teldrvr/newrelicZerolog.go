@@ -211,6 +211,9 @@ func (t *ZeroLogTransaction) logMessageWithAlreadyLockedMutex(level string, segm
 	case newRelicZerologError:
 		preparedLog = t.transaction.Error()
 		break
+	case newRelicZerologDebug:
+		preparedLog = t.transaction.Debug()
+		break
 	default:
 		return errors.New("unknown log level")
 	}
@@ -332,6 +335,9 @@ func (t *ZeroLogTransaction) logMessage(level string, segmentID string, readClos
 	case newRelicZerologError:
 		preparedLog = t.transaction.Error()
 		break
+	case newRelicZerologDebug:
+		preparedLog = t.transaction.Debug()
+		break
 	default:
 		return errors.New("unknown log level")
 	}
@@ -357,6 +363,14 @@ func (t *ZeroLogTransaction) Info(segmentID string, readCloser io.ReadCloser) er
 		return nil
 	}
 	return t.logMessage(newRelicZerologInfo, segmentID, readCloser)
+}
+
+// Debug logs errors in the transaction
+func (t *ZeroLogTransaction) Debug(segmentID string, readCloser io.ReadCloser) error {
+	if logLevel != logLevelDebug {
+		return nil
+	}
+	return t.logMessage(newRelicZerologDebug, segmentID, readCloser)
 }
 
 // Done ends the transaction

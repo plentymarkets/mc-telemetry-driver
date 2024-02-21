@@ -317,6 +317,68 @@ func (t *LocalTransaction) Info(segmentID string, readCloser io.ReadCloser) erro
 	return nil
 }
 
+// Debug logs information in the transaction
+func (t *LocalTransaction) Debug(segmentID string, readCloser io.ReadCloser) error {
+	if logLevel != logLevelDebug {
+		return nil
+	}
+	t.segmentContainer.mutex.Lock()
+	defer func() {
+		t.segmentContainer.mutex.Unlock()
+		closeErr := readCloser.Close()
+		if closeErr != nil {
+			log.Printf("Telemetry driver local could not close reader while logging Debug. Potential resource leak!")
+		}
+	}()
+	t.segmentWriteStart(segmentID) // TODO - Discusses the situation in which this returns an error
+	debugMsg, err := io.ReadAll(readCloser)
+	if err != nil {
+		return errors.New("error while reading debug message")
+	}
+
+	debugLog := string(debugMsg)
+
+	inSegment := false
+	if len(segmentID) > 0 {
+		_, ok := t.segmentContainer.segments[segmentID]
+		if ok {
+			inSegment = true
+		}
+	}
+
+	builder := strings.Builder{}
+	builder.WriteString("- Debug START -")
+	builder.WriteString("\n")
+	builder.WriteString("Trace: ")
+	builder.WriteString(t.trace)
+	builder.WriteString("\n")
+	builder.WriteString("Transaction: ")
+	builder.WriteString(t.transaction)
+	builder.WriteString("\n")
+	builder.WriteString("Transaction-Attributes: ")
+	builder.WriteString(fmt.Sprintf("%+v", t.attributes))
+	builder.WriteString("\n")
+	if inSegment {
+		builder.WriteString("Segment: ")
+		builder.WriteString(t.segmentContainer.segments[segmentID])
+		builder.WriteString("\n")
+		builder.WriteString("SegmentID: ")
+		builder.WriteString(segmentID)
+		builder.WriteString("\n")
+		builder.WriteString("Segment-Attributes: ")
+		builder.WriteString(fmt.Sprintf("%+v", t.segmentContainer.attributes[segmentID]))
+		builder.WriteString("\n")
+	}
+	builder.WriteString("Message: ")
+	builder.WriteString(debugLog)
+	builder.WriteString("\n")
+	builder.WriteString("- DEBUG END -")
+
+	fmt.Println(builder.String())
+
+	return nil
+}
+
 // Done ends the transaction
 func (t *LocalTransaction) Done() error {
 	// todo print transaction attributes
