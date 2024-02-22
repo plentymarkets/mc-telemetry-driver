@@ -71,13 +71,12 @@ type NewRelicSegmentContainer struct {
 
 // APMTransaction used for new relic transactions
 type APMTransaction struct {
-	transaction            *newrelic.Transaction
-	segmentContainer       NewRelicSegmentContainer
-	attributes             map[string]any
-	trace                  string
-	traceID                string
-	processID              string
-	segmentsStartWasLogged map[string]struct{}
+	transaction      *newrelic.Transaction
+	segmentContainer NewRelicSegmentContainer
+	attributes       map[string]any
+	trace            string
+	traceID          string
+	processID        string
 }
 
 func newAPMTransaction(transaction *newrelic.Transaction) *APMTransaction {
