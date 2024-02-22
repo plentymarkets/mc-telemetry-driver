@@ -196,7 +196,6 @@ func (t *APMTransaction) Info(_ string, readCloser io.ReadCloser) error {
 
 // Debug [NOT IMPLEMENTED]
 func (t *APMTransaction) Debug(_ string, readCloser io.ReadCloser) error {
-	// TODO - Will be implemented as in Error()
 	return nil
 }
 
