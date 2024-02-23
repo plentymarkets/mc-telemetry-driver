@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/newrelic/go-agent/v3/newrelic"
@@ -196,6 +197,27 @@ func (t *APMTransaction) Info(_ string, readCloser io.ReadCloser) error {
 
 // Debug [NOT IMPLEMENTED]
 func (t *APMTransaction) Debug(_ string, readCloser io.ReadCloser) error {
+
+	// max bytes available for the error message
+	debugMsg := make([]byte, telemetry.ErrorBytesSize)
+	defer func() {
+		closeErr := readCloser.Close()
+		if closeErr != nil {
+			log.Printf("Telemetry driver newRelicAPM could not close reader while logging Info. Potential resource leak!")
+		}
+	}()
+
+	bytesRead, err := readCloser.Read(debugMsg)
+	if err != nil {
+		return errors.New("error while reading Debug message")
+	}
+
+	recordLog := newrelic.LogData{}
+	recordLog.Severity = "Debug"
+	recordLog.Message = string(debugMsg[:bytesRead])
+	recordLog.Timestamp = time.Now().UnixMilli()
+
+	t.transaction.RecordLog(recordLog)
 	return nil
 }
 
