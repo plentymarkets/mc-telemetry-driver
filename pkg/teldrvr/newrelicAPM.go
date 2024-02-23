@@ -192,18 +192,37 @@ func (t *APMTransaction) Error(_ string, readCloser io.ReadCloser) error {
 
 // Info [NOT IMPLEMENTED]
 func (t *APMTransaction) Info(_ string, readCloser io.ReadCloser) error {
+	// max bytes available for the error message
+	InfoMsg := make([]byte, telemetry.ErrorBytesSize)
+	defer func() {
+		closeErr := readCloser.Close()
+		if closeErr != nil {
+			log.Printf("Telemetry driver newRelicAPM could not close reader while logging Info. Potential resource leak!")
+		}
+	}()
+
+	bytesRead, err := readCloser.Read(InfoMsg)
+	if err != nil {
+		return errors.New("error while reading Debug message")
+	}
+
+	recordLog := newrelic.LogData{}
+	recordLog.Severity = "Debug"
+	recordLog.Message = string(InfoMsg[:bytesRead])
+	recordLog.Timestamp = time.Now().UnixMilli()
+
+	t.transaction.RecordLog(recordLog)
 	return nil
 }
 
 // Debug [NOT IMPLEMENTED]
 func (t *APMTransaction) Debug(_ string, readCloser io.ReadCloser) error {
-
 	// max bytes available for the error message
 	debugMsg := make([]byte, telemetry.ErrorBytesSize)
 	defer func() {
 		closeErr := readCloser.Close()
 		if closeErr != nil {
-			log.Printf("Telemetry driver newRelicAPM could not close reader while logging Info. Potential resource leak!")
+			log.Printf("Telemetry driver newRelicAPM could not close reader while logging Debug. Potential resource leak!")
 		}
 	}()
 
