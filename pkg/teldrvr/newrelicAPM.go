@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/newrelic/go-agent/v3/newrelic"
@@ -193,7 +192,7 @@ func (t *APMTransaction) Error(_ string, readCloser io.ReadCloser) error {
 // Info [NOT IMPLEMENTED]
 func (t *APMTransaction) Info(_ string, readCloser io.ReadCloser) error {
 	// max bytes available for the error message
-	InfoMsg := make([]byte, telemetry.ErrorBytesSize)
+	infoMsg := make([]byte, telemetry.DebugByteSize)
 	defer func() {
 		closeErr := readCloser.Close()
 		if closeErr != nil {
@@ -201,15 +200,15 @@ func (t *APMTransaction) Info(_ string, readCloser io.ReadCloser) error {
 		}
 	}()
 
-	bytesRead, err := readCloser.Read(InfoMsg)
+	bytesRead, err := readCloser.Read(infoMsg)
 	if err != nil {
 		return errors.New("error while reading Debug message")
 	}
 
-	recordLog := newrelic.LogData{}
-	recordLog.Severity = "Debug"
-	recordLog.Message = string(InfoMsg[:bytesRead])
-	recordLog.Timestamp = time.Now().UnixMilli()
+	recordLog := newrelic.LogData{
+		Severity: "Info",
+		Message:  string(infoMsg[:bytesRead]),
+	}
 
 	t.transaction.RecordLog(recordLog)
 	return nil
@@ -218,7 +217,7 @@ func (t *APMTransaction) Info(_ string, readCloser io.ReadCloser) error {
 // Debug [NOT IMPLEMENTED]
 func (t *APMTransaction) Debug(_ string, readCloser io.ReadCloser) error {
 	// max bytes available for the error message
-	debugMsg := make([]byte, telemetry.ErrorBytesSize)
+	debugMsg := make([]byte, telemetry.DebugByteSize)
 	defer func() {
 		closeErr := readCloser.Close()
 		if closeErr != nil {
@@ -231,10 +230,10 @@ func (t *APMTransaction) Debug(_ string, readCloser io.ReadCloser) error {
 		return errors.New("error while reading Debug message")
 	}
 
-	recordLog := newrelic.LogData{}
-	recordLog.Severity = "Debug"
-	recordLog.Message = string(debugMsg[:bytesRead])
-	recordLog.Timestamp = time.Now().UnixMilli()
+	recordLog := newrelic.LogData{
+		Severity: "Debug",
+		Message:  string(debugMsg[:bytesRead]),
+	}
 
 	t.transaction.RecordLog(recordLog)
 	return nil
