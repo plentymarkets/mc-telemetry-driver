@@ -169,7 +169,7 @@ func (t *APMTransaction) SegmentEnd(segmentID string) error {
 // Error logs errors in the transaction
 func (t *APMTransaction) Error(_ string, readCloser io.ReadCloser) error {
 	// max bytes available for the error message
-	errMsg := make([]byte, telemetry.DebugByteSize)
+	errMsg := make([]byte, telemetry.ErrorBytesSize)
 	defer func() {
 		closeErr := readCloser.Close()
 		if closeErr != nil {
@@ -231,7 +231,7 @@ func (t *APMTransaction) Debug(_ string, readCloser io.ReadCloser) error {
 	}
 
 	recordLog := newrelic.LogData{
-		Severity: "Info",
+		Severity: "Debug",
 		Message:  string(debugMsg[:bytesRead]),
 	}
 
