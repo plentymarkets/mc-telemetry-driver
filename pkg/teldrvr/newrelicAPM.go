@@ -217,7 +217,7 @@ func (t *APMTransaction) Info(_ string, readCloser io.ReadCloser) error {
 // Debug [NOT IMPLEMENTED]
 func (t *APMTransaction) Debug(_ string, readCloser io.ReadCloser) error {
 	// max bytes available for the error message
-	debugMsg := make([]byte, telemetry.ErrorBytesSize)
+	debugMsg := make([]byte, telemetry.DebugByteSize)
 	defer func() {
 		closeErr := readCloser.Close()
 		if closeErr != nil {
