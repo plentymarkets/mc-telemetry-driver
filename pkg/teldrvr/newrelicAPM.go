@@ -189,7 +189,7 @@ func (t *APMTransaction) Error(_ string, readCloser io.ReadCloser) error {
 	return nil
 }
 
-// Info [NOT IMPLEMENTED]
+// Info logs info element in the transaction
 func (t *APMTransaction) Info(_ string, readCloser io.ReadCloser) error {
 	// max bytes available for the error message
 	infoMsg := make([]byte, telemetry.DebugByteSize)
@@ -214,7 +214,7 @@ func (t *APMTransaction) Info(_ string, readCloser io.ReadCloser) error {
 	return nil
 }
 
-// Debug [NOT IMPLEMENTED]
+// Debug logs debug element in the transaction
 func (t *APMTransaction) Debug(_ string, readCloser io.ReadCloser) error {
 	// max bytes available for the error message
 	debugMsg := make([]byte, telemetry.DebugByteSize)
