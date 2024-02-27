@@ -83,6 +83,11 @@ func (t *NopTransaction) Done() error {
 	return nil
 }
 
+// Debug logs information in the transaction
+func (t *NopTransaction) Debug(segmentID string, readCloser io.ReadCloser) error {
+	return nil
+}
+
 // CreateTrace creates a trace for the transaction
 func (t *NopTransaction) CreateTrace() (string, error) {
 	newUUID, err := uuid.NewUUID()
