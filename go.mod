@@ -6,7 +6,7 @@ require (
 	github.com/google/uuid v1.3.1
 	github.com/newrelic/go-agent/v3 v3.23.0
 	github.com/newrelic/go-agent/v3/integrations/logcontext-v2/zerologWriter v1.0.2
-	github.com/plentymarkets/mc-telemetry v0.2.5
+	github.com/plentymarkets/mc-telemetry v0.2.6
 	github.com/rs/zerolog v1.29.1
 	github.com/spf13/viper v1.16.0
 )
