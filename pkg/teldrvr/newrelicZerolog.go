@@ -304,10 +304,10 @@ func (t *ZeroLogTransaction) segmentWriteEnd(segmentID string) error {
 
 // Error logs errors in the transaction
 func (t *ZeroLogTransaction) Error(segmentID string, readCloser io.ReadCloser) error {
-	return t.logMessage(newRelicZerologError, segmentID, readCloser)
+	return t.logMessage(newRelicZerologError, segmentID, readCloser, telemetry.ErrorBytesSize)
 }
 
-func (t *ZeroLogTransaction) logMessage(level string, segmentID string, readCloser io.ReadCloser) error {
+func (t *ZeroLogTransaction) logMessage(level string, segmentID string, readCloser io.ReadCloser, msgByteSize int) error {
 	t.segmentContainer.mutex.Lock()
 	defer func() {
 		t.segmentContainer.mutex.Unlock()
@@ -318,7 +318,7 @@ func (t *ZeroLogTransaction) logMessage(level string, segmentID string, readClos
 	}()
 	t.segmentWriteStart(segmentID)
 	// max bytes available for the info message
-	msg := make([]byte, telemetry.ErrorBytesSize)
+	msg := make([]byte, msgByteSize)
 
 	bytesRead, err := readCloser.Read(msg)
 	if err != nil {
@@ -362,7 +362,7 @@ func (t *ZeroLogTransaction) Info(segmentID string, readCloser io.ReadCloser) er
 	if logLevel == logLevelError {
 		return nil
 	}
-	return t.logMessage(newRelicZerologInfo, segmentID, readCloser)
+	return t.logMessage(newRelicZerologInfo, segmentID, readCloser, telemetry.DebugByteSize)
 }
 
 // Debug logs errors in the transaction
@@ -370,7 +370,7 @@ func (t *ZeroLogTransaction) Debug(segmentID string, readCloser io.ReadCloser) e
 	if logLevel != logLevelDebug {
 		return nil
 	}
-	return t.logMessage(newRelicZerologDebug, segmentID, readCloser)
+	return t.logMessage(newRelicZerologDebug, segmentID, readCloser, telemetry.DebugByteSize)
 }
 
 // Done ends the transaction
