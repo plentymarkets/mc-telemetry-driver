@@ -193,8 +193,15 @@ func (t *ZeroLogTransaction) logMessageWithAlreadyLockedMutex(level string, segm
 			log.Printf("Telemetry driver newRelicZerolog could not close reader while logging Info. Potential resource leak!")
 		}
 	}()
+
 	// max bytes available for the info message
-	msg := make([]byte, telemetry.ErrorBytesSize)
+	msgByteSize := telemetry.ErrorBytesSize
+
+	if level != newRelicZerologError {
+		msgByteSize = telemetry.DebugByteSize
+	}
+
+	msg := make([]byte, msgByteSize)
 
 	bytesRead, err := readCloser.Read(msg)
 	if err != nil {
@@ -317,8 +324,15 @@ func (t *ZeroLogTransaction) logMessage(level string, segmentID string, readClos
 		}
 	}()
 	t.segmentWriteStart(segmentID)
+
 	// max bytes available for the info message
-	msg := make([]byte, telemetry.ErrorBytesSize)
+	msgByteSize := telemetry.ErrorBytesSize
+
+	if level != newRelicZerologError {
+		msgByteSize = telemetry.DebugByteSize
+	}
+
+	msg := make([]byte, msgByteSize)
 
 	bytesRead, err := readCloser.Read(msg)
 	if err != nil {
