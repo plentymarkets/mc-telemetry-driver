@@ -106,6 +106,9 @@ func (t *LocalTransaction) SegmentStart(segmentID string, name string) error {
 	var err error
 	t.segmentContainer.mutex.Lock()
 	defer t.segmentContainer.mutex.Unlock()
+	if t.segmentContainer.segments == nil {
+		t.segmentContainer.segments = make(map[string]string)
+	}
 	t.segmentContainer.segments[segmentID] = name
 	if logLevel == logLevelDebug {
 		err = t.segmentWriteStart(segmentID)

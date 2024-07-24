@@ -151,6 +151,9 @@ func (t *ZeroLogTransaction) AddTransactionAttribute(key string, value any) erro
 func (t *ZeroLogTransaction) SegmentStart(segmentID string, name string) error {
 	t.segmentContainer.mutex.Lock()
 	defer t.segmentContainer.mutex.Unlock()
+	if t.segmentContainer.segments == nil {
+		t.segmentContainer.segments = make(map[string]string)
+	}
 	t.segmentContainer.segments[segmentID] = name
 	if logLevel == logLevelDebug {
 		return t.segmentWriteStart(segmentID)
