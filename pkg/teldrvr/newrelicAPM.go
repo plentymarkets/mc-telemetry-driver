@@ -133,6 +133,10 @@ func (t *APMTransaction) AddSegmentAttribute(segmentID string, key string, value
 		return fmt.Errorf("can not add attribute to not existing segment. SegmentID: %s | Key: %s | Value: %s", segmentID, key, value)
 	}
 
+	if t.segmentContainer.attributes == nil {
+		t.segmentContainer.attributes = make(map[string]map[string]any)
+	}
+
 	if t.segmentContainer.attributes[segmentID] == nil {
 		t.segmentContainer.attributes[segmentID] = make(map[string]any)
 	}

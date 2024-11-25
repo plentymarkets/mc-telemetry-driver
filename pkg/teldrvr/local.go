@@ -147,6 +147,10 @@ func (t *LocalTransaction) AddSegmentAttribute(segmentID string, key string, val
 		return fmt.Errorf("can not add attribute to not existing segment.\nSegmentID: %s\nKey: %s\nValue: %s", segmentID, key, value)
 	}
 
+	if t.segmentContainer.attributes == nil {
+		t.segmentContainer.attributes = make(map[string]map[string]any)
+	}
+
 	if t.segmentContainer.attributes[segmentID] == nil {
 		t.segmentContainer.attributes[segmentID] = make(map[string]any)
 	}
