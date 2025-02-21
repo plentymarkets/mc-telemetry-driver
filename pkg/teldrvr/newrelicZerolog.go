@@ -151,9 +151,6 @@ func (t *ZeroLogTransaction) AddTransactionAttribute(key string, value any) erro
 func (t *ZeroLogTransaction) SegmentStart(segmentID string, name string) error {
 	t.segmentContainer.mutex.Lock()
 	defer t.segmentContainer.mutex.Unlock()
-	if t.segmentContainer.segments == nil {
-		t.segmentContainer.segments = make(map[string]string)
-	}
 	t.segmentContainer.segments[segmentID] = name
 	if logLevel == logLevelDebug {
 		return t.segmentWriteStart(segmentID)
@@ -252,10 +249,6 @@ func (t *ZeroLogTransaction) AddSegmentAttribute(segmentID string, key string, v
 	segmentName, segmentExist := t.segmentContainer.segments[segmentID]
 	if !segmentExist {
 		return fmt.Errorf("can not add attribute to not existing segment. SegmentID: %s | Key: %s | Value: %s", segmentID, key, value)
-	}
-
-	if t.segmentContainer.attributes == nil {
-		t.segmentContainer.attributes = make(map[string]map[string]any)
 	}
 
 	if t.segmentContainer.attributes[segmentID] == nil {
