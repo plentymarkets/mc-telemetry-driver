@@ -400,7 +400,7 @@ func (t *ZeroLogTransaction) SetTrace(trace string) error {
 	return nil
 }
 
-// Trace returns the current ttrace for the transaction
+// Trace returns the current trace for the transaction
 func (t *ZeroLogTransaction) Trace() (string, error) {
 	return t.trace, nil
 }
