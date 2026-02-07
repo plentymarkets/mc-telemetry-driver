@@ -106,9 +106,6 @@ func (t *LocalTransaction) SegmentStart(segmentID string, name string) error {
 	var err error
 	t.segmentContainer.mutex.Lock()
 	defer t.segmentContainer.mutex.Unlock()
-	if t.segmentContainer.segments == nil {
-		t.segmentContainer.segments = make(map[string]string)
-	}
 	t.segmentContainer.segments[segmentID] = name
 	if logLevel == logLevelDebug {
 		err = t.segmentWriteStart(segmentID)
@@ -145,10 +142,6 @@ func (t *LocalTransaction) AddSegmentAttribute(segmentID string, key string, val
 	segmentName, segmentExist := t.segmentContainer.segments[segmentID]
 	if !segmentExist {
 		return fmt.Errorf("can not add attribute to not existing segment.\nSegmentID: %s\nKey: %s\nValue: %s", segmentID, key, value)
-	}
-
-	if t.segmentContainer.attributes == nil {
-		t.segmentContainer.attributes = make(map[string]map[string]any)
 	}
 
 	if t.segmentContainer.attributes[segmentID] == nil {
@@ -190,8 +183,7 @@ func (t *LocalTransaction) segmentWriteEnd(segmentID string) error {
 	if !ok {
 		return fmt.Errorf("Error trying to end segment. Segment is not open.\nSegmentID: %s", segmentID)
 	}
-	// todo add the attributes
-	log.Printf("Segment end[%s]: %s\n", segmentID, name)
+	log.Printf("Segment end[%s]: %s\n Segment attributes: %v\n", segmentID, name, t.segmentContainer.attributes[segmentID])
 
 	delete(t.segmentContainer.segments, segmentID)
 	delete(t.segmentContainer.attributes, segmentID)

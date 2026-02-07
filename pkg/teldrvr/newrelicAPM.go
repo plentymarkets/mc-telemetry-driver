@@ -112,11 +112,6 @@ func (t *APMTransaction) SegmentStart(segmentID string, name string) error {
 	defer t.segmentContainer.mutex.Unlock()
 	segment := t.transaction.StartSegment(name)
 
-	// Failsafe for segments if for some reason they were not initialized
-	if t.segmentContainer.segments == nil {
-		t.segmentContainer.segments = make(map[string]*newrelic.Segment)
-	}
-
 	t.segmentContainer.segments[segmentID] = segment
 
 	return nil
@@ -131,10 +126,6 @@ func (t *APMTransaction) AddSegmentAttribute(segmentID string, key string, value
 	segment, segmentExist := t.segmentContainer.segments[segmentID]
 	if !segmentExist {
 		return fmt.Errorf("can not add attribute to not existing segment. SegmentID: %s | Key: %s | Value: %s", segmentID, key, value)
-	}
-
-	if t.segmentContainer.attributes == nil {
-		t.segmentContainer.attributes = make(map[string]map[string]any)
 	}
 
 	if t.segmentContainer.attributes[segmentID] == nil {
